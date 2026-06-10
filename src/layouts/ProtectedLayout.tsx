@@ -4,7 +4,7 @@ import { Navigate, Outlet } from "react-router";
 const ProtectedLayout = () => {
 	const { user } = useAuth();
 
-	if (!user || !user.authenticated) {
+	if (!user) {
 		return <Navigate to="/sign-in" replace />;
 	}
 

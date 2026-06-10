@@ -3,7 +3,7 @@ import {
 	InputGroupAddon,
 	InputGroupInput,
 } from "../ui/input-group";
-import GradientCheckbox from "../inputs/GradientCheckbox";
+import GradientCheckbox from "../fields/GradientCheckbox";
 import { useState } from "react";
 import HCenteredContainer from "../container/HCenteredContainer";
 import useInputAutoFocus from "@/hooks/useInputAutoFocus";

@@ -1,5 +1,5 @@
 import type IToDoItem from "@/models/to-do-item.model";
-import GradientCheckbox from "../inputs/GradientCheckbox";
+import GradientCheckbox from "../fields/GradientCheckbox";
 import { Item, ItemActions, ItemTitle } from "../ui/item";
 import { useState, type ChangeEvent, type KeyboardEvent } from "react";
 import { Input } from "../ui/input";

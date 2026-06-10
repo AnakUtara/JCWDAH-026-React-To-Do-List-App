@@ -4,7 +4,7 @@ import { Navigate, Outlet } from "react-router";
 const PublicLayout = () => {
 	const { user } = useAuth();
 
-	if (user && user.authenticated) {
+	if (user) {
 		return <Navigate to="/" replace />;
 	}
 

@@ -1,4 +1,4 @@
-import type { IUser } from "@/models/user.model";
+import Backendless from "backendless";
 import {
 	createContext,
 	useContext,
@@ -10,9 +10,19 @@ import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
 interface IAuthContext {
-	user: IUser | null;
-	signUp: (email: string, password: string) => void;
-	signIn: (email: string, password: string) => void;
+	user: Backendless.User | null;
+	signUp: (
+		email: string,
+		password: string,
+		onSuccess?: () => void,
+		onError?: () => void,
+	) => void;
+	signIn: (
+		email: string,
+		password: string,
+		onSuccess?: () => void,
+		onError?: () => void,
+	) => void;
 	signOut: () => void;
 }
 
@@ -23,72 +33,95 @@ type Props = {
 };
 
 const AuthProvider = ({ children }: Props) => {
-	const [user, setUser] = useState<IUser | null>(null);
+	const [user, setUser] = useState<Backendless.User | null>(null);
 
 	const nav = useNavigate();
 
-	const signUp = (email: string, password: string) => {
-		const newUser: IUser = { email, password };
-		const existingUser = localStorage.getItem("user");
-		const parsedExistingUser: IUser | null = existingUser
-			? JSON.parse(existingUser)
-			: null;
-		if (parsedExistingUser && parsedExistingUser.email === email) {
-			toast.error("An account with this email already exists!");
-			return;
+	const signUp = async (
+		email: string,
+		password: string,
+		onSuccess?: () => void,
+		onError?: () => void,
+	) => {
+		try {
+			await Backendless.UserService.register({
+				email,
+				password,
+			});
+			onSuccess?.();
+			toast.success("User registered successfully! Please login to continue.");
+			nav("/sign-in");
+		} catch (error) {
+			onError?.();
+			toast.error("Failed to register user!");
+			console.error(error);
 		}
-		localStorage.setItem(
-			"user",
-			JSON.stringify({ ...newUser, authenticated: false }),
-		);
-		setUser({ ...newUser, authenticated: false });
-		toast.success("Account created successfully!");
-		nav("/sign-in");
 	};
 
-	const signIn = (email: string, password: string) => {
-		const storedUser = localStorage.getItem("user");
-		if (storedUser) {
-			const parsedUser: IUser = JSON.parse(storedUser);
-			if (parsedUser.email === email && parsedUser.password === password) {
-				localStorage.setItem(
-					"user",
-					JSON.stringify({ ...parsedUser, authenticated: true }),
-				);
-				setUser({ ...parsedUser, authenticated: true });
-				toast.success("Logged in successfully!");
-				nav("/");
-				return;
-			}
-		}
-		toast.error("Invalid email or password!");
-	};
-
-	const signOut = () => {
-		localStorage.setItem(
-			"user",
-			JSON.stringify({ ...user, authenticated: false }),
-		);
-		setUser(null);
-		toast.success("Logged out successfully!");
-		nav("/sign-in");
-	};
-
-	// Panggil useEffect sekali setiap refresh page atau pergantian browser url input
-	// untuk mengecek apakah user sudah login atau belum berdasarkan informasi authenticated
-	// yang disimpan di localStorage
-	// Pattern AuthContext ini persis juga dilakukan pada implementasi nyata sistem autentikasi,
-	// dengan moda pengecekan berbeda dan metode penyimpanan berbeda.
-	// Namun alur/pola utamanya sama saja.
-	useEffect(() => {
-		const storedUser = localStorage.getItem("user");
-		const parsedUser: IUser | null = storedUser ? JSON.parse(storedUser) : null;
-		if (!parsedUser || !parsedUser.authenticated) {
-			// eslint-disable-next-line react-hooks/set-state-in-effect
+	const signIn = async (
+		email: string,
+		password: string,
+		onSuccess?: () => void,
+		onError?: () => void,
+	) => {
+		try {
+			const authUser = await Backendless.UserService.login(
+				email,
+				password,
+				true,
+			);
+			setUser(authUser);
+			onSuccess?.();
+			toast.success("Logged in successfully!");
+			nav("/");
+		} catch (error) {
+			onError?.();
+			toast.error("Failed to login! Please check your email and password.");
+			console.error(error);
 			setUser(null);
-			return;
 		}
-		setUser(parsedUser?.authenticated ? parsedUser : null);
+	};
+
+	const signOut = async () => {
+		try {
+			await Backendless.UserService.logout();
+			setUser(null);
+			toast.success("Logged out successfully!");
+			nav("/sign-in");
+		} catch (error) {
+			toast.error("Failed to logout!");
+			console.error(error);
+		}
+	};
+
+	const refreshUser = async () => {
+		try {
+			const currentUser = await Backendless.UserService.getCurrentUser();
+			setUser(currentUser);
+		} catch (error) {
+			console.error("Failed to refresh user:", error);
+		}
+	};
+
+	const checkAuth = async () => {
+		try {
+			const isValid = await Backendless.UserService.isValidLogin();
+			if (isValid) {
+				refreshUser();
+			} else {
+				setUser(null);
+			}
+		} catch (error) {
+			console.error("Failed to check auth:", error);
+			toast.error("Failed to check authentication status!");
+			setUser(null);
+		}
+	};
+
+	useEffect(() => {
+		// eslint-disable-next-line react-hooks/set-state-in-effect
+		checkAuth();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	return (
