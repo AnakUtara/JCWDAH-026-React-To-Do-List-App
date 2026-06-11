@@ -14,6 +14,7 @@ import { Toaster } from "sonner";
 import ProtectedLayout from "./layouts/ProtectedLayout.tsx";
 import PublicLayout from "./layouts/PublicLayout.tsx";
 import { initBackendless } from "./configs/backendless.config.ts";
+import NotFoundPage from "./pages/NotFoundPage.tsx";
 
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
@@ -35,6 +36,7 @@ createRoot(document.getElementById("root")!).render(
 							<Route path="sign-up" element={<SignUpPage />} />
 							<Route path="sign-in" element={<SignInPage />} />
 						</Route>
+						<Route path="*" element={<NotFoundPage />} />
 					</Routes>
 				</AuthProvider>
 			</BrowserRouter>
