@@ -4,28 +4,22 @@ import {
 	InputGroupInput,
 } from "../ui/input-group";
 import GradientCheckbox from "../fields/GradientCheckbox";
-import { useState } from "react";
 import HCenteredContainer from "../container/HCenteredContainer";
 import useInputAutoFocus from "@/hooks/useInputAutoFocus";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "../ui/button";
+import { Form, Formik } from "formik";
+import toDoSchema from "@/validations/todo.validation";
+import { cn } from "@/lib/utils";
 
 type Props = {
-	onCreate: (title: string, done: boolean) => void;
+	onCreate: (title: string, done: boolean) => Promise<void>;
 };
 
 const Header = ({ onCreate }: Props) => {
 	const { user, signOut } = useAuth();
 
-	const [title, setTitle] = useState("");
-	const [done, setDone] = useState(false);
-
 	const inputRef = useInputAutoFocus();
-
-	const handleReset = () => {
-		setTitle("");
-		setDone(false);
-	};
 
 	return (
 		<div className="relative h-50 bg-[url('/src/assets/header-background.png')] bg-cover bg-center md:h-75">
@@ -45,31 +39,62 @@ const Header = ({ onCreate }: Props) => {
 								TODO
 							</h1>
 						</div>
-						<InputGroup className="h-12 items-center rounded-lg bg-white md:h-16 dark:bg-neutral-900">
-							<InputGroupAddon className="px-4">
-								<GradientCheckbox
-									checked={done}
-									onCheckedChange={(c) => {
-										setDone(c);
-									}}
-								/>
-							</InputGroupAddon>
-							<InputGroupInput
-								ref={inputRef}
-								className="p-0 pt-1 text-xs placeholder:text-xs placeholder:text-[#9495A5] md:text-lg md:placeholder:text-lg"
-								placeholder="Create a new todo..."
-								value={title}
-								onChange={(e) => {
-									setTitle(e.target.value);
-								}}
-								onKeyDown={(e) => {
-									if (e.key === "Enter" && title !== "") {
-										onCreate(title, done);
-										handleReset();
-									}
-								}}
-							/>
-						</InputGroup>
+						<Formik
+							initialValues={{ title: "", isDone: false }}
+							validationSchema={toDoSchema}
+							onSubmit={async (values, { resetForm, setSubmitting }) => {
+								console.log(values);
+								try {
+									await onCreate(values.title, values.isDone);
+									resetForm();
+								} catch (error) {
+									console.error("Error creating todo:", error);
+								} finally {
+									setSubmitting(false);
+								}
+							}}
+						>
+							{({
+								values,
+								handleChange,
+								setFieldValue,
+								submitForm,
+								errors,
+							}) => (
+								<Form>
+									<InputGroup
+										className={cn(
+											"h-12 items-center rounded-lg bg-white md:h-16 dark:bg-neutral-900",
+											errors.title ? "border border-red-500" : "",
+										)}
+									>
+										<InputGroupAddon className="px-4">
+											<GradientCheckbox
+												checked={values.isDone}
+												onCheckedChange={(checked: boolean) =>
+													setFieldValue("isDone", checked)
+												}
+											/>
+										</InputGroupAddon>
+										<InputGroupInput
+											ref={inputRef}
+											id="title"
+											name="title"
+											className="p-0 pt-1 text-xs placeholder:text-xs placeholder:text-[#9495A5] md:text-lg md:placeholder:text-lg"
+											placeholder="Create a new todo..."
+											value={values.title}
+											onChange={handleChange}
+											onKeyDown={async (e) => {
+												if (e.key === "Enter") {
+													e.preventDefault();
+													await submitForm();
+												}
+											}}
+										/>
+									</InputGroup>
+								</Form>
+							)}
+						</Formik>
 					</div>
 				</HCenteredContainer>
 			</div>
