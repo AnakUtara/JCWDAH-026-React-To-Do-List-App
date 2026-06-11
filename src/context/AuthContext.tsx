@@ -24,6 +24,7 @@ interface IAuthContext {
 		onError?: () => void,
 	) => void;
 	signOut: () => void;
+	isAuthenticating: boolean;
 }
 
 const AuthContext = createContext<IAuthContext | undefined>(undefined);
@@ -34,6 +35,7 @@ type Props = {
 
 const AuthProvider = ({ children }: Props) => {
 	const [user, setUser] = useState<Backendless.User | null>(null);
+	const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false);
 
 	const nav = useNavigate();
 
@@ -64,6 +66,7 @@ const AuthProvider = ({ children }: Props) => {
 		onSuccess?: () => void,
 		onError?: () => void,
 	) => {
+		setIsAuthenticating(true);
 		try {
 			const authUser = await Backendless.UserService.login(
 				email,
@@ -79,6 +82,8 @@ const AuthProvider = ({ children }: Props) => {
 			toast.error("Failed to login! Please check your email and password.");
 			console.error(error);
 			setUser(null);
+		} finally {
+			setIsAuthenticating(false);
 		}
 	};
 
@@ -104,10 +109,11 @@ const AuthProvider = ({ children }: Props) => {
 	};
 
 	const checkAuth = async () => {
+		setIsAuthenticating(true);
 		try {
 			const isValid = await Backendless.UserService.isValidLogin();
 			if (isValid) {
-				refreshUser();
+				await refreshUser();
 			} else {
 				setUser(null);
 			}
@@ -115,6 +121,8 @@ const AuthProvider = ({ children }: Props) => {
 			console.error("Failed to check auth:", error);
 			toast.error("Failed to check authentication status!");
 			setUser(null);
+		} finally {
+			setIsAuthenticating(false);
 		}
 	};
 
@@ -131,6 +139,7 @@ const AuthProvider = ({ children }: Props) => {
 				signUp,
 				signIn,
 				signOut,
+				isAuthenticating,
 			}}
 		>
 			{children}
