@@ -1,9 +1,10 @@
 export default interface IToDoItem {
-  id: number
-  title: string
-  isDone: boolean
+	objectId: string;
+	title: string;
+	isDone: boolean;
+	ownerId?: string;
 }
 
-export type TTodoList = IToDoItem[]
+export type TTodoList = IToDoItem[];
 
-export type TToDoFilter = "All" | "Active" | "Completed"
+export type TToDoFilter = "All" | "Active" | "Completed";
